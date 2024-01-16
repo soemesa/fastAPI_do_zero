@@ -1,6 +1,8 @@
 import uvicorn
 from fastapi import FastAPI
 
+from src.schemas import UserSchema, UserPublic
+
 app = FastAPI()
 
 if __name__ == '__main__':
@@ -10,3 +12,8 @@ if __name__ == '__main__':
 @app.get('/')
 def read_root():
     return {'message': 'Olá Mundo!'}
+
+
+@app.post('/users/', status_code=201, response_model=UserPublic)
+def create_user(user: UserSchema):
+    return user

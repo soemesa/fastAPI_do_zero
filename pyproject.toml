@@ -12,6 +12,7 @@ uvicorn = "^0.25.0"
 ruff = "^0.1.13"
 blue = "^0.9.1"
 isort = "^5.13.2"
+pydantic = "^2.5.3"
 
 
 [build-system]
