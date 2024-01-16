@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "fastapi-do-zero"
+version = "0.1.0"
+description = "fastapi"
+authors = ["Soilenyis <soilenyis@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.109.0"
+uvicorn = "^0.25.0"
+ruff = "^0.1.13"
+blue = "^0.9.1"
+isort = "^5.13.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 79
+exclude = ['.venv', 'migrations']
+
+[tool.blue]
+extend-exclude = ['migrations/']
+
+[tool.isort]
+profile = 'black'
+line_length = 79
+extend_skip = ['migrations']
