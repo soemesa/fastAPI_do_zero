@@ -20,3 +20,7 @@ class UserList(BaseModel):
 
 class UserDB(UserSchema):
     id: int
+
+
+class Message(BaseModel):
+    detail: str

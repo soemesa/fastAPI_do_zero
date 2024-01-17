@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from src.database import get_session
 from src.models import User
-from src.schemas import UserSchema, UserPublic, UserList, UserDB
+from src.schemas import UserSchema, UserPublic, UserList, UserDB, Message
 
 app = FastAPI()
 
@@ -85,11 +85,15 @@ def update_user(
     return db_user
 
 
-@app.delete("/users/{user_id}", response_model=None)
-def delete_user(user_id: int):
-    if user_id > len(database) or user_id < 1:
-        raise HTTPException(status_code=404, detail="User not found")
+@app.delete("/users/{user_id}", response_model=Message)
+def delete_user(user_id: int, session: Session = Depends(get_session)):
 
-    del database[user_id - 1]
+    db_user = session.scalar(select(User). where(User.id == user_id))
 
-    return {"detail": "User deleted"}
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    session.delete(db_user)
+    session.commit()
+
+    return {"detail": "Usuário deletado"}
