@@ -85,10 +85,24 @@ def update_user(
     return db_user
 
 
-@app.delete("/users/{user_id}", response_model=Message)
-def delete_user(user_id: int, session: Session = Depends(get_session)):
+# @app.delete("/users/{user_id}", response_model=Message)
+# def delete_user(user_id: int, session: Session = Depends(get_session)):
+#
+#     db_user = session.scalar(select(User). where(User.id == user_id))
+#
+#     if not db_user:
+#         raise HTTPException(status_code=404, detail="Usuário não encontrado")
+#
+#     session.delete(db_user)
+#     session.commit()
+#
+#     return {"detail": "Usuário deletado com sucesso"}
 
-    db_user = session.scalar(select(User). where(User.id == user_id))
+
+@app.delete("/users/{user_username}", response_model=Message)
+def delete_user(user_username: str, session: Session = Depends(get_session)):
+
+    db_user = session.scalar(select(User). where(User.username == user_username))
 
     if not db_user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
@@ -96,4 +110,4 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
     session.delete(db_user)
     session.commit()
 
-    return {"detail": "Usuário deletado"}
+    return {"detail": "Usuário deletado com sucesso"}
