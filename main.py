@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from src.database import get_session
 from src.models import User
-from src.schemas import UserSchema, UserPublic, UserList, UserDB, Message
+from src.schemas import UserSchema, UserPublic, UserList, Message
+from src.security import get_password_hash
 
 app = FastAPI()
 
@@ -27,8 +28,11 @@ def create_user(user: UserSchema, session: Session = Depends(get_session)):
     )
     if db_user:
         raise HTTPException(status_code=400, detail="Usuário já registrado")
+
+    hashed_password = get_password_hash(user.password)
+
     db_user = User(
-        username=user.username, password=user.password, email=user.email
+        username=user.username, email=user.email, password=hashed_password
     )
     session.add(db_user)
     session.commit()
@@ -39,19 +43,20 @@ def create_user(user: UserSchema, session: Session = Depends(get_session)):
 
 @app.get("/users/", response_model=UserList)
 def read_users(
-        skip: int = 0, limit: int = 100, session: Session = Depends(get_session)
+        skip: int = 0,
+        limit: int = 100,
+        session: Session = Depends(get_session)
 ):
     users = session.scalars(select(User). offset(skip). limit(limit)).all()
 
     return {'users': users}
 
 
-database = []
-
-
 # @app.put("/users/{user_id}", response_model=UserPublic)
 # def update_user(
-#         user_id: int, user: UserSchema, session: Session = Depends(get_session)
+#         user_id: int,
+#         user: UserSchema,
+#         session: Session = Depends(get_session)
 # ):
 #     db_user = session.scalar(select(User). where(User.id == user_id))
 #
@@ -69,7 +74,9 @@ database = []
 
 @app.put("/users/{user_username}", response_model=UserPublic)
 def update_user(
-        user_username: str, user: UserSchema, session: Session = Depends(get_session)
+        user_username: str,
+        user: UserSchema,
+        session: Session = Depends(get_session)
 ):
     db_user = session.scalar(select(User). where(User.username == user_username))
 
@@ -77,8 +84,9 @@ def update_user(
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
     db_user.username = user.username
-    db_user.password = user.password
+    db_user.password = get_password_hash(user.password)
     db_user.email = user.email
+
     session.commit()
     session.refresh(db_user)
 
