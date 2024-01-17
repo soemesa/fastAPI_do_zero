@@ -9,28 +9,26 @@ from src.schemas import UserSchema, UserPublic, UserList, UserDB
 
 app = FastAPI()
 
-if __name__ == '__main__':
-    uvicorn.run('main:app', host='0.0.0.0', log_level='debug', port=8002, reload=True)
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app", host="0.0.0.0", log_level="debug", port=8002, reload=True
+    )
 
 
-@app.get('/')
+@app.get("/")
 def read_root():
-    return {'message': 'Olá Mundo!'}
+    return {"message": "Olá Mundo!"}
 
 
-@app.post('/users/', response_model=UserPublic, status_code=201)
+@app.post("/users/", response_model=UserPublic, status_code=201)
 def create_user(user: UserSchema, session: Session = Depends(get_session)):
     db_user = session.scalar(
         select(User).where(User.username == user.username)
     )
     if db_user:
-        raise HTTPException(
-            status_code=400, detail='Usuário já registrado'
-        )
+        raise HTTPException(status_code=400, detail="Usuário já registrado")
     db_user = User(
-        username=user.username,
-        password=user.password,
-        email=user.email
+        username=user.username, password=user.password, email=user.email
     )
     session.add(db_user)
     session.commit()
@@ -39,18 +37,22 @@ def create_user(user: UserSchema, session: Session = Depends(get_session)):
     return db_user
 
 
-@app.get('/users/', response_model=UserList)
-def read_users():
-    return {'users'}
+@app.get("/users/", response_model=UserList)
+def read_users(
+        skip: int = 0, limit: int = 100, session: Session = Depends(get_session)
+):
+    users = session.scalars(select(User). offset(skip). limit(limit)).all()
+
+    return {'users': users}
 
 
 database = []
 
 
-@app.put('/users/{user_id}', response_model=UserPublic)
+@app.put("/users/{user_id}", response_model=UserPublic)
 def update_user(user_id: int, user: UserSchema):
     if user_id > len(database) or user_id < 1:
-        raise HTTPException(status_code=404, detail='User not found')
+        raise HTTPException(status_code=404, detail="User not found")
 
     user_with_id = UserDB(**user.model_dump(), id=user_id)
     database[user_id - 1] = user_with_id
@@ -58,11 +60,11 @@ def update_user(user_id: int, user: UserSchema):
     return user_with_id
 
 
-@app.delete('/users/{user_id}', response_model=None)
+@app.delete("/users/{user_id}", response_model=None)
 def delete_user(user_id: int):
     if user_id > len(database) or user_id < 1:
-        raise HTTPException(status_code=404, detail='User not found')
+        raise HTTPException(status_code=404, detail="User not found")
 
     del database[user_id - 1]
 
-    return {'detail': 'User deleted'}
+    return {"detail": "User deleted"}
