@@ -50,14 +50,21 @@ database = []
 
 
 @app.put("/users/{user_id}", response_model=UserPublic)
-def update_user(user_id: int, user: UserSchema):
-    if user_id > len(database) or user_id < 1:
-        raise HTTPException(status_code=404, detail="User not found")
+def update_user(
+        user_id: int, user: UserSchema, session: Session = Depends(get_session)
+):
+    db_user = session.scalar(select(User). where(User.id == user_id))
 
-    user_with_id = UserDB(**user.model_dump(), id=user_id)
-    database[user_id - 1] = user_with_id
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
-    return user_with_id
+    db_user.username = user.username
+    db_user.password = user.password
+    db_user.email = user.email
+    session.commit()
+    session.refresh(db_user)
+
+    return db_user
 
 
 @app.delete("/users/{user_id}", response_model=None)
