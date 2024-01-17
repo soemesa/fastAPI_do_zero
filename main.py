@@ -1,12 +1,13 @@
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.database import get_session
 from src.models import User
-from src.schemas import UserSchema, UserPublic, UserList, Message
-from src.security import get_password_hash
+from src.schemas import UserSchema, UserPublic, UserList, Message, Token
+from src.security import get_password_hash, verify_password, create_access_token
 
 app = FastAPI()
 
@@ -119,3 +120,23 @@ def delete_user(user_username: str, session: Session = Depends(get_session)):
     session.commit()
 
     return {"detail": "Usuário deletado com sucesso"}
+
+
+@app.post('/token', response_model=Token)
+def login_for_access_token(
+        form_data: OAuth2PasswordRequestForm = Depends(),
+        session: Session = Depends(get_session)
+):
+    user = session.scalar(select(User).where(User.username == form_data.username))
+
+    if not user:
+        raise HTTPException(
+            status_code=400, detail='Usuário inválido'
+        )
+    if not verify_password(form_data.password, user.password):
+        raise HTTPException(
+            status_code=400, detail='Senha inválida'
+        )
+    access_token = create_access_token(data={'sub': user.username})
+
+    return Token(access_token=access_token, token_type='bearer')
