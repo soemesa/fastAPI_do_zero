@@ -10,18 +10,18 @@ from sqlalchemy.orm import Session
 from src.database import get_session
 from src.models import User
 from src.schemas import TokenData
+from src.settings import Settings
 
-SECRET_KEY = 'secret'
-ALGORITHM = 'HS256'
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+settings = Settings()
+
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({'exp': expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 
@@ -46,7 +46,7 @@ async def get_current_user(
         headers={'WWW-Authenticate': 'Bearer'}
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=settings.ALGORITHM)
         username: str = payload.get('sub')
         if not username:
             raise credentials_exception
