@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -10,8 +12,12 @@ from src.security import get_password_hash, get_current_user
 router = APIRouter(prefix='/users', tags=['users'])
 
 
+Session = Annotated[Session, Depends(get_session)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
 @router.post('/', response_model=UserPublic, status_code=201)
-def create_user(user: UserSchema, session: Session = Depends(get_session)):
+def create_user(user: UserSchema, session: Session):
     db_user = session.scalar(
         select(User).where(User.username == user.username)
     )
@@ -31,11 +37,7 @@ def create_user(user: UserSchema, session: Session = Depends(get_session)):
 
 
 @router.get('/', response_model=UserList)
-def read_users(
-        skip: int = 0,
-        limit: int = 100,
-        session: Session = Depends(get_session)
-):
+def read_users(session: Session, skip: int = 0, limit: int = 100):
     users = session.scalars(select(User).offset(skip).limit(limit)).all()
 
     return {'users': users}
@@ -45,8 +47,8 @@ def read_users(
 def update_user(
         user_username: str,
         user: UserSchema,
-        session: Session = Depends(get_session),
-        current_user: User = Depends(get_current_user)
+        session: Session,
+        current_user: CurrentUser
 ):
     if current_user.username != user_username:
         raise HTTPException(status_code=404, detail="Permissões insuficientes")
@@ -61,12 +63,8 @@ def update_user(
 
 
 @router.delete("/{user_username}", response_model=Message)
-def delete_user(
-        user_username: str,
-        session: Session = Depends(get_session),
-        current_user: User = Depends(get_current_user)
-):
-    if current_user != user_username:
+def delete_user(user_username: str, session: Session, current_user: CurrentUser):
+    if current_user.username != user_username:
         raise HTTPException(status_code=404, detail="Permissões insuficientes")
 
     session.delete(current_user)
