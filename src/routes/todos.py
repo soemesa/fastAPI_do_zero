@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from src.database import get_session
 from src.models import User, Todo
-from src.schemas import TodoPublic, TodoSchema, TodoList
+from src.schemas import TodoPublic, TodoSchema, TodoList, TodoUpdate
 from src.security import get_current_user
 
 Session = Annotated[Session, Depends(get_session)]
@@ -63,3 +63,23 @@ def list_todos(
     todo_list = TodoList(todos=[TodoPublic(**todo.__dict__) for todo in todos])
 
     return todo_list
+
+
+@router.patch('/{todo_id}', response_model=TodoPublic)
+def patch_todo(
+        todo_id: int, session: Session, user: CurrentUser, todo: TodoUpdate
+):
+    db_todo = session.scalar(
+        select(Todo).where(Todo.user_id == user.id, Todo.id == todo_id)
+    )
+    if not db_todo:
+        raise HTTPException(status_code=404, detail='Tarefa não encontrada')
+
+    for key, value in todo.model_dump(exclude_unset=True).items():
+        setattr(db_todo, key, value)
+
+    session.add(db_todo)
+    session.commit()
+    session.refresh(db_todo)
+
+    return db_todo
