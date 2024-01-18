@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from src.database import get_session
 from src.models import User, Todo
-from src.schemas import TodoPublic, TodoSchema, TodoList, TodoUpdate
+from src.schemas import TodoPublic, TodoSchema, TodoList, TodoUpdate, Message
 from src.security import get_current_user
 
 Session = Annotated[Session, Depends(get_session)]
@@ -83,3 +83,17 @@ def patch_todo(
     session.refresh(db_todo)
 
     return db_todo
+
+
+@router.delete('/{todo_id', response_model=Message)
+def delete_todo(todo_id: int, session: Session, user: CurrentUser):
+    todo = session.scalar(
+        select(Todo).where(Todo.user_id == user.id, Todo.id == todo_id)
+    )
+    if not todo:
+        raise HTTPException(status_code=404, detail='Tarefa não encontrada')
+
+    session.delete(todo)
+    session.commit()
+
+    return {'detail': 'Tarefa deletada com sucesso!'}
